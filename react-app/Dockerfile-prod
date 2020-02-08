@@ -1,0 +1,20 @@
+# build environment
+FROM node:12.2.0-alpine
+WORKDIR /react-app
+ENV PATH /react-app/node_modules/.bin:$PATH
+COPY package.json /react-app/package.json
+RUN npm install --silent
+RUN npm install react-scripts --silent
+COPY . /react-app
+# This creates a static HTML/JS website which can be run on a Nginx webserver.
+RUN npm run build
+
+# production environment
+# When having multiple FROM statements, Docker will handle this as a multistage Dockerfile
+FROM nginx:1.16.0-alpine
+# We're copying the docker output of the first 'stage' to the webserver directory inside the container.
+COPY --from=0 /react-app/build /usr/share/nginx/html
+# Run the container on port 80 instead of 3000
+EXPOSE 80
+# Start the nginx webserver automatically once the container runs.
+CMD ["nginx", "-g", "daemon off;"]
